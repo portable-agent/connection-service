@@ -1,0 +1,11 @@
+.git
+.github
+.gradle
+.idea
+build
+docs
+site
+src/test
+*.iml
+*.md
+!README.md
