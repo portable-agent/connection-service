@@ -1,0 +1,17 @@
+spring:
+    application:
+        name: connection-service
+    datasource:
+        url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/connections}
+        username: ${DATABASE_USER:connections}
+        password: ${DATABASE_PASSWORD:connections}
+
+management:
+    endpoints:
+        web:
+            exposure:
+                include: health,info,prometheus
+    endpoint:
+        health:
+            probes:
+                enabled: true

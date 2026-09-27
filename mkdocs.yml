@@ -1,0 +1,10 @@
+site_name: Portable Agent Connection Service
+site_description: Документация сервиса внешних подключений
+docs_dir: docs
+theme:
+    name: material
+nav:
+    - Главная: index.md
+    - Архитектура: architecture.md
+    - Разработка: development.md
+    - Runbook: runbook.md
