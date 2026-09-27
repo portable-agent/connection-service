@@ -18,7 +18,9 @@
 Есть схема `account_connections`, доменная модель и jOOQ repository. Сервис сохраняет только уже
 зашифрованные token bytes, nonce и версию ключа; API для открытого refresh token в repository нет.
 Поиск всегда ограничен `tenantId` и `actorId`, а несколько активных аккаунтов возвращаются списком без
-скрытого выбора. OAuth endpoints, шифратор и provider clients ещё не реализованы.
+скрытого выбора. AES-256-GCM шифратор привязывает ciphertext к владельцу и провайдеру через AAD,
+поддерживает несколько версий ключа для ротации и включается только с внешней конфигурацией. OAuth
+endpoints и provider clients ещё не реализованы.
 
 Интеграционные тесты запускают Spring Boot и repository с PostgreSQL в Testcontainers, проверяют
 Flyway, jOOQ, tenant isolation, health и закрытый доступ к метрикам. Без Docker тесты завершаются
