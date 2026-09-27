@@ -16,3 +16,13 @@ Repository содержит только jOOQ-запросы. Provider client о
 
 Refresh token никогда не покидает сервис. Calendar MCP позднее получит только короткоживущий access
 token через внутренний endpoint с service JWT.
+
+## Хранилище
+
+`account_connections` хранит владельца (`tenant_id`, `actor_id`), провайдера, внешний account id,
+статус и результат шифрования refresh token: ciphertext, nonce и версию ключа. Открытого token в
+модели repository нет. У одного пользователя может быть несколько аккаунтов одного провайдера;
+repository возвращает их все, а явный выбор будет правилом service-слоя.
+
+Снимок `connection-api.yaml` получен из `portable-agent/contracts v2.7.0`. Java API и DTO создаются в
+`build/`, сгенерированный код не хранится в Git.

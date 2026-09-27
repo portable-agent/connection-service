@@ -4,8 +4,8 @@
 короткоживущие access token разрешённым сервисам. Он не вызывает Google Calendar и не хранит команды
 пользователя.
 
-Сейчас репозиторий содержит проверяемый Spring Boot-каркас. Схема подключений, шифрование и OAuth API
-будут добавляться отдельными TDD-инкрементами после согласования контрактов.
+Сейчас сервис хранит модель подключения и зашифрованные данные refresh token в PostgreSQL. Публичный
+OAuth API ещё не реализован и будет добавляться отдельными TDD-инкрементами.
 
 ## Стек
 
@@ -29,6 +29,13 @@ docker compose up -d postgres
 ```powershell
 ./gradlew spotlessCheck test
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/check-docs.ps1
+```
+
+OpenAPI берётся только из подписанного GitHub Release `portable-agent/contracts`. Обновить локальный
+снимок контракта можно командой:
+
+```powershell
+./scripts/update-contract.ps1 -Version 2.7.0
 ```
 
 ## Границы

@@ -9,7 +9,8 @@ $requiredFiles = @(
     "docs/index.md",
     "docs/architecture.md",
     "docs/development.md",
-    "docs/runbook.md"
+    "docs/runbook.md",
+    "src/main/openapi/connection-api.yaml"
 )
 
 $missingFiles = $requiredFiles | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Leaf) }
@@ -25,6 +26,11 @@ if ($catalogText -notmatch "backstage\.io/techdocs-ref:\s*dir:\.") {
 $mkdocsText = Get-Content -LiteralPath "mkdocs.yml" -Raw
 if ($mkdocsText -notmatch "(?m)^docs_dir:\s*docs\s*$") {
     throw "mkdocs.yml must contain docs_dir: docs."
+}
+
+$contractText = Get-Content -LiteralPath "src/main/openapi/connection-api.yaml" -Raw
+if ($contractText -notmatch "(?m)^  version: 2\.7\.0$") {
+    throw "connection-api.yaml must use portable-agent/contracts version 2.7.0."
 }
 
 Write-Host "connection-service documentation matches the standard."

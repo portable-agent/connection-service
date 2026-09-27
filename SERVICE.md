@@ -7,7 +7,7 @@
 | Ответственность | Подключения внешних OAuth-аккаунтов и короткоживущие access token |
 | Владелец | `portable-agent/backend` |
 | Язык | Java 25, Spring Boot 4 |
-| Входящие контракты | Будущие public OAuth API и internal token API |
+| Входящие контракты | `portable-agent/contracts` v2.7.0: public OAuth API и internal token API |
 | Исходящие контракты | OAuth token endpoints провайдеров |
 | Свои данные | Зашифрованные refresh token и метаданные подключения |
 | Не отвечает за | Команды, подтверждения, выбор MCP tool, вызов Calendar API |
@@ -15,6 +15,11 @@
 
 ## Текущее состояние
 
-Есть только проверяемый сервисный каркас. OAuth endpoints, таблицы и шифрование ещё не реализованы.
-Интеграционные тесты запускают Spring Boot с PostgreSQL в Testcontainers, проверяют jOOQ, health и
-закрытый доступ к метрикам. Без Docker тесты завершаются ошибкой, а не пропускаются.
+Есть схема `account_connections`, доменная модель и jOOQ repository. Сервис сохраняет только уже
+зашифрованные token bytes, nonce и версию ключа; API для открытого refresh token в repository нет.
+Поиск всегда ограничен `tenantId` и `actorId`, а несколько активных аккаунтов возвращаются списком без
+скрытого выбора. OAuth endpoints, шифратор и provider clients ещё не реализованы.
+
+Интеграционные тесты запускают Spring Boot и repository с PostgreSQL в Testcontainers, проверяют
+Flyway, jOOQ, tenant isolation, health и закрытый доступ к метрикам. Без Docker тесты завершаются
+ошибкой, а не пропускаются.
