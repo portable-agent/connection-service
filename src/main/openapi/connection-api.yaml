@@ -1,0 +1,267 @@
+openapi: 3.1.0
+info:
+  title: Portable Agent Connection API
+  version: 2.7.0
+  description: Подключения внешних аккаунтов. Публичные операции используют владельца из JWT.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+servers:
+  - url: https://api.portable-agent.dev/connections
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/connections:
+    get:
+      tags: [Connections]
+      operationId: listConnections
+      summary: Получить подключения текущего пользователя
+      responses:
+        "200":
+          description: Подключения только для tenant и sub проверенного JWT
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Connection"
+        "401":
+          $ref: "#/components/responses/Problem"
+  /api/v1/connections/start:
+    post:
+      tags: [Connections]
+      operationId: startConnection
+      summary: Начать подключение внешнего аккаунта
+      description: Создаёт одноразовый state и PKCE. Redirect URI и scopes берутся из конфигурации сервера.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartRequest"
+      responses:
+        "200":
+          description: Ссылка для открытия в браузере; ответ нельзя кешировать или логировать
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartResponse"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+  /api/v1/connections/callback:
+    get:
+      tags: [Connections]
+      operationId: completeConnection
+      summary: Обработать возврат OAuth-провайдера
+      description: |
+        Владельца определяет одноразовый state из серверного хранилища.
+        Требуется ровно один из code или error. State проверяется и атомарно погашается,
+        включая отказ пользователя. Code обменивается с сохранённым PKCE verifier.
+        Ответ не содержит токенов; code и state запрещено писать в access logs.
+      security: []
+      parameters:
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 32
+            maxLength: 512
+        - name: code
+          in: query
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 4096
+        - name: error
+          in: query
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 256
+      responses:
+        "200":
+          description: Статическая страница результата без внешнего redirect и секретов
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            text/html:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/Problem"
+        "502":
+          $ref: "#/components/responses/Problem"
+  /api/v1/connections/{connectionId}:
+    delete:
+      tags: [Connections]
+      operationId: disconnectConnection
+      summary: Отключить своё подключение
+      description: |
+        Немедленно запрещает локальную выдачу токенов.
+        Credentials удаляются после provider revoke. При временной ошибке возвращается 502,
+        подключение остаётся отключённым; повтор DELETE повторяет revoke.
+        Для чужого или отсутствующего подключения возвращается 404.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Подключение отключено
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "502":
+          $ref: "#/components/responses/Problem"
+  /internal/v1/tokens:
+    post:
+      tags: [Tokens]
+      operationId: getConnectionToken
+      summary: Получить короткоживущий токен для выполнения действия
+      description: |
+        Требует service JWT с audience connection-service, scope connection:token
+        и разрешённым client identity. Tenant берётся из проверенного JWT.
+        Actor приходит только из доверенного контекста Action Service.
+        Нет активного подключения — 409 connection_required.
+        Несколько подходящих подключений — 409 connection_ambiguous; скрытый выбор запрещён.
+      security:
+        - serviceAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+      responses:
+        "200":
+          description: Только access token; тело запрещено логировать
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/NoStore"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "502":
+          $ref: "#/components/responses/Problem"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Пользовательский JWT; tenant_id и sub определяют владельца.
+    serviceAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Service JWT с audience connection-service и scope connection:token.
+  headers:
+    NoStore:
+      required: true
+      schema:
+        type: string
+        const: no-store
+  responses:
+    Problem:
+      description: Ошибка без секретов и внутренних данных
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    StartRequest:
+      type: object
+      additionalProperties: false
+      required: [provider]
+      properties:
+        provider:
+          type: string
+          enum: [google-calendar]
+    StartResponse:
+      type: object
+      additionalProperties: false
+      required: [url, expiresAt]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Ссылка авторизации настроенного провайдера.
+        expiresAt:
+          type: string
+          format: date-time
+    Connection:
+      type: object
+      additionalProperties: false
+      required: [id, provider, status, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [google-calendar]
+        status:
+          type: string
+          enum: [active, reconnect_required, disconnected]
+        createdAt:
+          type: string
+          format: date-time
+    TokenRequest:
+      type: object
+      additionalProperties: false
+      required: [actorId, provider]
+      properties:
+        actorId:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [google-calendar]
+    TokenResponse:
+      type: object
+      additionalProperties: false
+      required: [accessToken, tokenType, expiresAt]
+      properties:
+        accessToken:
+          type: string
+          minLength: 1
+        tokenType:
+          type: string
+          enum: [Bearer]
+        expiresAt:
+          type: string
+          format: date-time
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599

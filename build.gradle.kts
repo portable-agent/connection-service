@@ -2,6 +2,7 @@ plugins {
     java
     jacoco
     id("org.jooq.jooq-codegen-gradle") version "3.21.8"
+    id("org.openapi.generator") version "7.24.0"
     id("com.diffplug.spotless") version "8.10.1"
     id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
@@ -32,6 +33,8 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("org.postgresql:postgresql")
+
+    jooqCodegen("org.jooq:jooq-meta-extensions:3.21.8")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
@@ -66,6 +69,77 @@ tasks.withType<Test> {
 
 tasks.check {
     dependsOn(tasks.spotlessCheck)
+}
+
+jooq {
+    configuration {
+        generator {
+            database {
+                name = "org.jooq.meta.extensions.ddl.DDLDatabase"
+                includes = "account_connections"
+                properties {
+                    property {
+                        key = "scripts"
+                        value = "src/main/resources/db/migration/*.sql"
+                    }
+                    property {
+                        key = "sort"
+                        value = "flyway"
+                    }
+                    property {
+                        key = "defaultNameCase"
+                        value = "lower"
+                    }
+                }
+            }
+            generate {
+                deprecated = false
+                records = true
+            }
+            target {
+                packageName = "dev.portableagent.connection.db"
+                directory = "build/generated-src/jooq/main"
+            }
+        }
+    }
+}
+
+sourceSets.main {
+    java.srcDir("build/generated-src/jooq/main")
+    java.srcDir(layout.buildDirectory.dir("generated-src/openapi/src/main/java"))
+}
+
+openApiGenerate {
+    generatorName.set("spring")
+    inputSpec.set("$projectDir/src/main/openapi/connection-api.yaml")
+    outputDir.set(
+        layout.buildDirectory
+            .dir("generated-src/openapi")
+            .get()
+            .asFile.absolutePath,
+    )
+    apiPackage.set("dev.portableagent.connection.api")
+    modelPackage.set("dev.portableagent.connection.api.model")
+    configOptions.set(
+        mapOf(
+            "annotationLibrary" to "none",
+            "documentationProvider" to "none",
+            "hideGenerationTimestamp" to "true",
+            "interfaceOnly" to "true",
+            "openApiNullable" to "false",
+            "performBeanValidation" to "true",
+            "skipDefaultInterface" to "true",
+            "useResponseEntity" to "true",
+            "useSpringBoot4" to "true",
+            "useSpringBuiltInValidation" to "true",
+            "useSwaggerUI" to "false",
+            "useTags" to "true",
+        ),
+    )
+}
+
+tasks.compileJava {
+    dependsOn(tasks.jooqCodegen, tasks.openApiGenerate)
 }
 
 tasks.jacocoTestReport {
