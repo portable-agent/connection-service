@@ -16,3 +16,16 @@ Testcontainers — jOOQ и Flyway на настоящем PostgreSQL.
 ```powershell
 ./scripts/update-contract.ps1 -Version 2.7.0
 ```
+
+Для локальной проверки шифра включи его внешними properties. Значения — Base64 от случайных 32 байт;
+не сохраняй их в `.env` под Git:
+
+```powershell
+$env:CONNECTION_TOKEN_KEYS_ENABLED = "true"
+$env:CONNECTION_TOKEN_KEYS_CURRENT_VERSION = "1"
+$env:CONNECTION_TOKEN_KEYS_ITEMS_0_VERSION = "1"
+$env:CONNECTION_TOKEN_KEYS_ITEMS_0_VALUE = "<base64-32-bytes>"
+```
+
+При ротации добавь следующий элемент `ITEMS_1`, переключи `CURRENT_VERSION`, а предыдущий ключ оставь
+до перешифрования или удаления всех старых записей.
