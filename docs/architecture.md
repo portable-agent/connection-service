@@ -11,8 +11,10 @@ HTTP controller
             -> OAuth provider
 ```
 
-Controller отвечает только за HTTP и DTO. Service проверяет правила и открывает транзакцию.
+Controller отвечает только за HTTP и DTO. Service проверяет правила и управляет сценарием.
 Repository содержит только jOOQ-запросы. Provider client общается с Google либо тестовым OAuth stub.
+Сетевой обмен code с provider не помещается в транзакцию БД: upsert подключения выполняется одним
+атомарным SQL-запросом.
 
 Refresh token никогда не покидает сервис. Calendar MCP позднее получит только короткоживущий access
 token через внутренний endpoint с service JWT.
@@ -58,3 +60,16 @@ Google adapter запрашивает только `openid` и `calendar.events`
 После обмена code он получает стабильный `sub` из UserInfo. Token/revoke/UserInfo endpoints приходят
 из типизированной конфигурации: тесты подменяют их HTTP stub, production использует официальные URL.
 Секреты и token не входят в `toString`, а provider-ошибки не переносят response body наружу.
+
+## Подключение аккаунта
+
+`ConnectionService.start` сначала получает provider из registry и только затем создаёт OAuth-сессию,
+чтобы не оставлять бесполезную сессию для выключенного provider. Результат содержит URL и срок жизни,
+но `toString` скрывает URL вместе со state.
+
+`ConnectionService.complete` потребляет одноразовый state, получает проверенного владельца и PKCE
+verifier, обменивает code и шифрует только refresh token. Repository делает `INSERT ... ON CONFLICT DO
+UPDATE` по владельцу, provider и внешнему account id. При reconnect сохраняются прежние `id` и
+`created_at`, а token, status и `updated_at` заменяются. Если шифрование или upsert не удались после
+обмена, refresh token отзывается как компенсация. Отказ пользователя проходит через отдельный
+`reject` и потребляет state без расшифровки verifier.

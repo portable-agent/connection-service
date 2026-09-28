@@ -56,12 +56,21 @@ public class OAuthSessionService {
 
     @Transactional
     public CompletedOAuthSession complete(String state) {
+        var session = consume(state);
+        var owner = new TokenOwner(session.tenantId(), session.actorId(), session.provider());
+        return new CompletedOAuthSession(owner, cipher.decrypt(session.encryptedVerifier(), owner));
+    }
+
+    @Transactional
+    public void reject(String state) {
+        consume(state);
+    }
+
+    private OAuthSession consume(String state) {
         if (state == null || state.length() < 32 || state.length() > 512) {
             throw new InvalidOAuthSession();
         }
-        var session = repository.consume(hash(state), clock.instant()).orElseThrow(InvalidOAuthSession::new);
-        var owner = new TokenOwner(session.tenantId(), session.actorId(), session.provider());
-        return new CompletedOAuthSession(owner, cipher.decrypt(session.encryptedVerifier(), owner));
+        return repository.consume(hash(state), clock.instant()).orElseThrow(InvalidOAuthSession::new);
     }
 
     private String randomText() {

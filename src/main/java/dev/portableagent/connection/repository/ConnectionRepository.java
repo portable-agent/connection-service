@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.jooq.DSLContext;
@@ -44,6 +45,46 @@ public class ConnectionRepository {
                 .set(ACCOUNT_CONNECTIONS.CREATED_AT, utc(connection.createdAt()))
                 .set(ACCOUNT_CONNECTIONS.UPDATED_AT, utc(connection.updatedAt()))
                 .execute();
+    }
+
+    public AccountConnection saveOrUpdate(AccountConnection connection) {
+        return Objects.requireNonNull(db.insertInto(ACCOUNT_CONNECTIONS)
+                .set(ACCOUNT_CONNECTIONS.ID, connection.id())
+                .set(ACCOUNT_CONNECTIONS.TENANT_ID, connection.tenantId())
+                .set(ACCOUNT_CONNECTIONS.ACTOR_ID, connection.actorId())
+                .set(ACCOUNT_CONNECTIONS.PROVIDER, connection.provider().value())
+                .set(ACCOUNT_CONNECTIONS.PROVIDER_ACCOUNT_ID, connection.providerAccountId())
+                .set(ACCOUNT_CONNECTIONS.STATUS, connection.status().value())
+                .set(
+                        ACCOUNT_CONNECTIONS.ENCRYPTED_REFRESH_TOKEN,
+                        connection.encryptedToken().data())
+                .set(
+                        ACCOUNT_CONNECTIONS.TOKEN_NONCE,
+                        connection.encryptedToken().nonce())
+                .set(
+                        ACCOUNT_CONNECTIONS.KEY_VERSION,
+                        connection.encryptedToken().keyVersion())
+                .set(ACCOUNT_CONNECTIONS.CREATED_AT, utc(connection.createdAt()))
+                .set(ACCOUNT_CONNECTIONS.UPDATED_AT, utc(connection.updatedAt()))
+                .onConflict(
+                        ACCOUNT_CONNECTIONS.TENANT_ID,
+                        ACCOUNT_CONNECTIONS.ACTOR_ID,
+                        ACCOUNT_CONNECTIONS.PROVIDER,
+                        ACCOUNT_CONNECTIONS.PROVIDER_ACCOUNT_ID)
+                .doUpdate()
+                .set(ACCOUNT_CONNECTIONS.STATUS, connection.status().value())
+                .set(
+                        ACCOUNT_CONNECTIONS.ENCRYPTED_REFRESH_TOKEN,
+                        connection.encryptedToken().data())
+                .set(
+                        ACCOUNT_CONNECTIONS.TOKEN_NONCE,
+                        connection.encryptedToken().nonce())
+                .set(
+                        ACCOUNT_CONNECTIONS.KEY_VERSION,
+                        connection.encryptedToken().keyVersion())
+                .set(ACCOUNT_CONNECTIONS.UPDATED_AT, utc(connection.updatedAt()))
+                .returning()
+                .fetchOne(this::toConnection));
     }
 
     public Optional<AccountConnection> findById(UUID tenantId, UUID actorId, UUID connectionId) {
