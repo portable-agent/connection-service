@@ -26,6 +26,10 @@ endpoints и provider clients ещё не реализованы.
 `consume` атомарно принимает только неистёкшую и ещё не использованную сессию, поэтому два callback
 не могут обменять один authorization code повторно.
 
+`OAuthSessionService` создаёт 256-bit random `state` и PKCE verifier, строит challenge методом S256,
+сохраняет только hash/encrypted значения и завершает flow через атомарный `consume`. TTL задаётся
+типизированным `connection.oauth.session-ttl` и сейчас по умолчанию равен 10 минутам.
+
 Интеграционные тесты запускают Spring Boot и repository с PostgreSQL в Testcontainers, проверяют
 Flyway, jOOQ, tenant isolation, health и закрытый доступ к метрикам. Без Docker тесты завершаются
 ошибкой, а не пропускаются.
