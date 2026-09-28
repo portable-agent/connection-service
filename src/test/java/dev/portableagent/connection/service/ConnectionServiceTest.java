@@ -187,6 +187,39 @@ class ConnectionServiceTest {
     }
 
     @Test
+    void finish_whenCodeIsPresent_shouldCompleteConnection() {
+        var completed = new CompletedOAuthSession(owner, "verifier");
+        var tokens = new ProviderTokens("google-user", "refresh-secret", "access-secret", now.plusSeconds(3600));
+        var encrypted = new EncryptedToken(new byte[] {1}, new byte[] {2}, 1);
+        when(sessions.complete("state-value")).thenReturn(completed);
+        when(providers.get(owner.provider())).thenReturn(provider);
+        when(provider.exchange("code-value", "verifier")).thenReturn(tokens);
+        when(cipher.encrypt(tokens.refreshToken(), owner)).thenReturn(encrypted);
+        when(repository.saveOrUpdate(any())).thenAnswer(call -> call.getArgument(0));
+
+        assertThat(service.finish("state-value", "code-value", null)).isEqualTo(ConnectionResult.CONNECTED);
+    }
+
+    @Test
+    void finish_whenProviderReturnedError_shouldConsumeStateAndReturnDenied() {
+        assertThat(service.finish("state-value", null, "access_denied")).isEqualTo(ConnectionResult.DENIED);
+        verify(sessions).reject("state-value");
+    }
+
+    @Test
+    void finish_whenCodeAndErrorAreBothPresent_shouldRejectRequest() {
+        assertThatThrownBy(() -> service.finish("state-value", "code-value", "access_denied"))
+                .isInstanceOf(InvalidOAuthCallback.class)
+                .hasMessage("Exactly one of code or error is required");
+    }
+
+    @Test
+    void finish_whenCodeAndErrorAreMissing_shouldRejectRequestWithoutConsumingState() {
+        assertThatThrownBy(() -> service.finish("state-value", null, null)).isInstanceOf(InvalidOAuthCallback.class);
+        verifyNoInteractions(sessions);
+    }
+
+    @Test
     void list_whenOwnerHasConnections_shouldReturnRepositoryResult() {
         var connection = connection();
         when(repository.findAll(owner.tenantId(), owner.actorId())).thenReturn(List.of(connection));

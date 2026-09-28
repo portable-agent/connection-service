@@ -52,7 +52,7 @@ public class ConnectionService {
         return new ConnectionStart(provider.authorizationUrl(session), session.expiresAt());
     }
 
-    public AccountConnection complete(String state, String code) {
+    AccountConnection complete(String state, String code) {
         var session = sessions.complete(state);
         var owner = session.owner();
         var provider = providers.get(owner.provider());
@@ -65,8 +65,20 @@ public class ConnectionService {
         }
     }
 
-    public void reject(String state) {
+    void reject(String state) {
         sessions.reject(state);
+    }
+
+    public ConnectionResult finish(String state, String code, String error) {
+        if ((code == null) == (error == null)) {
+            throw new InvalidOAuthCallback();
+        }
+        if (error != null) {
+            reject(state);
+            return ConnectionResult.DENIED;
+        }
+        complete(state, code);
+        return ConnectionResult.CONNECTED;
     }
 
     public List<AccountConnection> list(UUID tenantId, UUID actorId) {

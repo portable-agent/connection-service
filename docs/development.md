@@ -50,3 +50,12 @@ $env:GOOGLE_OAUTH_REDIRECT_URI = "<registered-callback-uri>"
 
 Endpoint properties можно переопределить для локального OAuth stub. Никогда не добавляй client secret,
 authorization code, access token или refresh token в `.env` под Git.
+
+Публичные endpoints проверяют JWT. Trust settings не имеют значений по умолчанию и всегда приходят
+из окружения. Для локального Keycloak передай:
+
+```powershell
+$env:OIDC_ISSUER = "http://localhost:8081/realms/portable-agent"
+$env:OIDC_JWKS_URL = "http://localhost:8081/realms/portable-agent/protocol/openid-connect/certs"
+$env:OIDC_AUDIENCE = "connection-service"
+```

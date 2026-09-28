@@ -22,6 +22,11 @@ connection:
             - openid
             - https://www.googleapis.com/auth/calendar.events
 
+auth:
+    issuer: ${OIDC_ISSUER}
+    jwks-url: ${OIDC_JWKS_URL}
+    audience: ${OIDC_AUDIENCE:connection-service}
+
 management:
     endpoints:
         web:

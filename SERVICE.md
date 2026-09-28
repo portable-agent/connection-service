@@ -21,7 +21,7 @@
 скрытого выбора. Повторное подключение того же внешнего аккаунта атомарно обновляет token и статус,
 сохраняя исходные `id` и `createdAt`. AES-256-GCM шифратор привязывает ciphertext к владельцу и
 провайдеру через AAD, поддерживает несколько версий ключа для ротации и включается только с внешней
-конфигурацией. OAuth HTTP endpoints ещё не реализованы.
+конфигурацией.
 
 Одноразовые OAuth-сессии хранят только SHA-256 hash от `state` и зашифрованный PKCE verifier. Метод
 `consume` атомарно принимает только неистёкшую и ещё не использованную сессию, поэтому два callback
@@ -45,6 +45,12 @@ refresh token шифрование или запись в БД завершаю�
 сначала меняет локальный статус на `DISCONNECTED`, затем отзывает refresh token у provider и только
 после успешного revoke удаляет запись с credentials. При временной ошибке provider отключённая запись
 остаётся для безопасного повтора операции.
+
+`ConnectionController` реализует public часть OpenAPI v2.7.0. Start, list и disconnect получают
+`tenant_id` и `sub` только из проверенного JWT; callback открыт для OAuth provider, но одноразовый
+state связывает его с владельцем. Ответы start/callback имеют `Cache-Control: no-store`. JWT
+проверяется по подписи, issuer, audience `connection-service` и UUID identity claims. Internal token
+endpoint будет следующим отдельным бизнес-срезом.
 
 Интеграционные тесты запускают Spring Boot и repository с PostgreSQL в Testcontainers, проверяют
 Flyway, jOOQ, tenant isolation, health и закрытый доступ к метрикам. Без Docker тесты завершаются
