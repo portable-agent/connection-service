@@ -36,3 +36,7 @@ refresh token невосстановимыми; их придётся подкл
 Истёкшие и погашенные строки `oauth_sessions` не содержат raw state или открытый verifier. Фоновая
 очистка будет добавлена вместе с OAuth flow; до этого их можно удалять только по `expires_at` после
 резервного копирования и без вывода encrypted columns в логи.
+
+При `redirect_uri_mismatch` сравни `GOOGLE_OAUTH_REDIRECT_URI` с Google Cloud Console посимвольно:
+scheme, host, port, path и trailing slash должны совпадать. При provider 4xx/5xx не выводи response
+body или request form: они могут содержать authorization code либо token.

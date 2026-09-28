@@ -48,3 +48,13 @@ PKCE verifier хранится тем же зашифрованным конте
 Service генерирует `state` и verifier из 32 случайных байт, кодирует Base64 URL без padding и создаёт
 PKCE challenge как `BASE64URL(SHA256(verifier))` с методом `S256`. Открытые значения существуют
 только на границах start/callback; `toString` result-объектов их скрывает.
+
+## OAuth-провайдеры
+
+`OAuthProvider` — порт для authorization URL, code exchange, refresh и revoke. Реализации собираются
+в `OAuthProviders` по enum-ключу, поэтому новый Microsoft/Jira adapter добавляется без цепочки `if`.
+
+Google adapter запрашивает только `openid` и `calendar.events`, использует offline access и PKCE S256.
+После обмена code он получает стабильный `sub` из UserInfo. Token/revoke/UserInfo endpoints приходят
+из типизированной конфигурации: тесты подменяют их HTTP stub, production использует официальные URL.
+Секреты и token не входят в `toString`, а provider-ошибки не переносят response body наружу.
