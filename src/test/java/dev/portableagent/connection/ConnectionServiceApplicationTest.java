@@ -2,6 +2,7 @@ package dev.portableagent.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.portableagent.connection.service.OAuthSessionService;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -16,7 +17,14 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {
+            "connection.token-keys.enabled=true",
+            "connection.token-keys.current-version=1",
+            "connection.token-keys.items[0].version=1",
+            "connection.token-keys.items[0].value=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        })
 @Testcontainers
 class ConnectionServiceApplicationTest {
     @Container
@@ -26,12 +34,16 @@ class ConnectionServiceApplicationTest {
     @Autowired
     private DSLContext db;
 
+    @Autowired
+    private OAuthSessionService oauthSessionService;
+
     @LocalServerPort
     private int port;
 
     @Test
     void application_whenStarted_shouldConnectToPostgres() {
         assertThat(db.fetchOne("select 1").get(0, Integer.class)).isEqualTo(1);
+        assertThat(oauthSessionService).isNotNull();
     }
 
     @Test

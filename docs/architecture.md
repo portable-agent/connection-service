@@ -44,3 +44,7 @@ Refresh token шифруется AES-256-GCM со случайным 96-bit nonc
 PKCE verifier хранится тем же зашифрованным контейнером с nonce и версией ключа. Callback выполняет
 один условный `UPDATE ... RETURNING`: запись возвращается только пока `consumed_at IS NULL` и
 `expires_at > now`. Это делает state одноразовым и при параллельных запросах к разным инстансам.
+
+Service генерирует `state` и verifier из 32 случайных байт, кодирует Base64 URL без padding и создаёт
+PKCE challenge как `BASE64URL(SHA256(verifier))` с методом `S256`. Открытые значения существуют
+только на границах start/callback; `toString` result-объектов их скрывает.

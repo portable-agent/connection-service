@@ -6,6 +6,10 @@ spring:
         username: ${DATABASE_USER:connections}
         password: ${DATABASE_PASSWORD:connections}
 
+connection:
+    oauth:
+        session-ttl: 10m
+
 management:
     endpoints:
         web:
