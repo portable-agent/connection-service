@@ -9,6 +9,7 @@ import dev.portableagent.connection.provider.OAuthProviders;
 import dev.portableagent.connection.provider.ProviderTokens;
 import dev.portableagent.connection.repository.ConnectionRepository;
 import java.time.Clock;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -66,6 +67,22 @@ public class ConnectionService {
 
     public void reject(String state) {
         sessions.reject(state);
+    }
+
+    public List<AccountConnection> list(UUID tenantId, UUID actorId) {
+        return repository.findAll(tenantId, actorId);
+    }
+
+    public void disconnect(UUID tenantId, UUID actorId, UUID connectionId) {
+        var connection = repository.findById(tenantId, actorId, connectionId).orElseThrow(ConnectionNotFound::new);
+        if (!repository.markDisconnected(connection, clock.instant())) {
+            throw new ConnectionNotFound();
+        }
+        var owner = new TokenOwner(tenantId, actorId, connection.provider());
+        var provider = providers.get(connection.provider());
+        var refreshToken = cipher.decrypt(connection.encryptedToken(), owner);
+        provider.revoke(refreshToken);
+        repository.deleteDisconnected(connection);
     }
 
     private AccountConnection save(TokenOwner owner, ProviderTokens tokens) {
