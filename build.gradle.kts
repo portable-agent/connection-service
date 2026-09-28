@@ -76,7 +76,7 @@ jooq {
         generator {
             database {
                 name = "org.jooq.meta.extensions.ddl.DDLDatabase"
-                includes = "account_connections"
+                includes = "account_connections|oauth_sessions"
                 properties {
                     property {
                         key = "scripts"

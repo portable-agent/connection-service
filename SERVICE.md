@@ -22,6 +22,10 @@
 поддерживает несколько версий ключа для ротации и включается только с внешней конфигурацией. OAuth
 endpoints и provider clients ещё не реализованы.
 
+Одноразовые OAuth-сессии хранят только SHA-256 hash от `state` и зашифрованный PKCE verifier. Метод
+`consume` атомарно принимает только неистёкшую и ещё не использованную сессию, поэтому два callback
+не могут обменять один authorization code повторно.
+
 Интеграционные тесты запускают Spring Boot и repository с PostgreSQL в Testcontainers, проверяют
 Flyway, jOOQ, tenant isolation, health и закрытый доступ к метрикам. Без Docker тесты завершаются
 ошибкой, а не пропускаются.

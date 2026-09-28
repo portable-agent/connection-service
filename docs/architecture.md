@@ -37,3 +37,10 @@ Refresh token шифруется AES-256-GCM со случайным 96-bit nonc
 Ключи не имеют значений по умолчанию и не хранятся в Git. Crypto bean создаётся только при
 `connection.token-keys.enabled=true`; неверный Base64, ключ не в 32 байта либо отсутствие текущей
 версии останавливают запуск.
+
+## OAuth-сессия
+
+Таблица `oauth_sessions` не хранит raw `state`: первичным ключом служит lowercase SHA-256 hash.
+PKCE verifier хранится тем же зашифрованным контейнером с nonce и версией ключа. Callback выполняет
+один условный `UPDATE ... RETURNING`: запись возвращается только пока `consumed_at IS NULL` и
+`expires_at > now`. Это делает state одноразовым и при параллельных запросах к разным инстансам.
