@@ -109,6 +109,36 @@ class ConnectionRepositoryTest {
         assertThat(saved.updatedAt()).isEqualTo(changedAt);
     }
 
+    @Test
+    void saveOrUpdate_whenAccountIsReconnected_shouldKeepIdentityAndReplaceToken() {
+        var first = connection(UUID.randomUUID(), UUID.randomUUID(), "google-user-7");
+        var disconnectedAt = first.createdAt().plusSeconds(60);
+        repository.save(first);
+        repository.updateStatus(
+                first.tenantId(), first.actorId(), first.id(), ConnectionStatus.RECONNECT_REQUIRED, disconnectedAt);
+        var newToken = new EncryptedToken(new byte[] {7, 8}, new byte[] {9, 10}, 2);
+        var reconnect = new AccountConnection(
+                UUID.randomUUID(),
+                first.tenantId(),
+                first.actorId(),
+                first.provider(),
+                first.providerAccountId(),
+                ConnectionStatus.ACTIVE,
+                newToken,
+                disconnectedAt.plusSeconds(60),
+                disconnectedAt.plusSeconds(60));
+
+        var saved = repository.saveOrUpdate(reconnect);
+
+        assertThat(saved.id()).isEqualTo(first.id());
+        assertThat(saved.createdAt()).isEqualTo(first.createdAt());
+        assertThat(saved.updatedAt()).isEqualTo(reconnect.updatedAt());
+        assertThat(saved.status()).isEqualTo(ConnectionStatus.ACTIVE);
+        assertThat(saved.encryptedToken()).isEqualTo(newToken);
+        assertThat(repository.findActive(first.tenantId(), first.actorId(), first.provider()))
+                .containsExactly(saved);
+    }
+
     private AccountConnection connection(UUID tenantId, UUID actorId, String providerAccountId) {
         var now = Instant.parse("2026-09-27T10:00:00Z");
         return new AccountConnection(

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.portableagent.connection.crypto.TokenCipher;
@@ -101,5 +102,23 @@ class OAuthSessionServiceTest {
         assertThatThrownBy(() -> service.complete("valid-state-value-with-enough-length"))
                 .isInstanceOf(InvalidOAuthSession.class)
                 .hasMessage("OAuth session is invalid or expired");
+    }
+
+    @Test
+    void reject_whenStateIsValid_shouldConsumeItWithoutDecryptingVerifier() {
+        var session = new OAuthSession(
+                "a".repeat(64),
+                owner.tenantId(),
+                owner.actorId(),
+                owner.provider(),
+                encrypted,
+                now,
+                now.plusSeconds(600));
+        when(repository.consume(any(), org.mockito.ArgumentMatchers.eq(now))).thenReturn(Optional.of(session));
+
+        service.reject("valid-state-value-with-enough-length");
+
+        verify(repository).consume(any(), org.mockito.ArgumentMatchers.eq(now));
+        verifyNoInteractions(cipher);
     }
 }
