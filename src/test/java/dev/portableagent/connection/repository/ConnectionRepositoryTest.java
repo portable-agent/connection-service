@@ -139,6 +139,57 @@ class ConnectionRepositoryTest {
                 .containsExactly(saved);
     }
 
+    @Test
+    void findAll_whenSeveralUsersExist_shouldReturnOnlyOwnersConnections() {
+        var tenantId = UUID.randomUUID();
+        var actorId = UUID.randomUUID();
+        var first = connection(tenantId, actorId, "google-user-8");
+        var second = connection(tenantId, actorId, "google-user-9")
+                .withStatus(
+                        ConnectionStatus.RECONNECT_REQUIRED, first.createdAt().plusSeconds(1));
+        repository.save(first);
+        repository.save(second);
+        repository.save(connection(tenantId, UUID.randomUUID(), "other-user"));
+
+        assertThat(repository.findAll(tenantId, actorId)).containsExactlyInAnyOrder(first, second);
+    }
+
+    @Test
+    void disconnect_whenReconnectReplacedToken_shouldNotChangeOrDeleteNewConnection() {
+        var first = connection(UUID.randomUUID(), UUID.randomUUID(), "google-user-11");
+        repository.save(first);
+        var reconnect = new AccountConnection(
+                UUID.randomUUID(),
+                first.tenantId(),
+                first.actorId(),
+                first.provider(),
+                first.providerAccountId(),
+                ConnectionStatus.ACTIVE,
+                new EncryptedToken(new byte[] {11}, new byte[] {12}, 2),
+                first.createdAt().plusSeconds(1),
+                first.updatedAt().plusSeconds(1));
+        var savedReconnect = repository.saveOrUpdate(reconnect);
+
+        assertThat(repository.markDisconnected(first, first.updatedAt().plusSeconds(2)))
+                .isFalse();
+        assertThat(repository.deleteDisconnected(first)).isFalse();
+        assertThat(repository.findById(first.tenantId(), first.actorId(), first.id()))
+                .contains(savedReconnect);
+    }
+
+    @Test
+    void disconnect_whenStoredTokenIsUnchanged_shouldMarkAndDeleteConnection() {
+        var connection = connection(UUID.randomUUID(), UUID.randomUUID(), "google-user-12");
+        repository.save(connection);
+
+        assertThat(repository.markDisconnected(
+                        connection, connection.updatedAt().plusSeconds(1)))
+                .isTrue();
+        assertThat(repository.deleteDisconnected(connection)).isTrue();
+        assertThat(repository.findById(connection.tenantId(), connection.actorId(), connection.id()))
+                .isEmpty();
+    }
+
     private AccountConnection connection(UUID tenantId, UUID actorId, String providerAccountId) {
         var now = Instant.parse("2026-09-27T10:00:00Z");
         return new AccountConnection(

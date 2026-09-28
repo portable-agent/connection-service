@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.springframework.stereotype.Repository;
@@ -95,6 +96,14 @@ public class ConnectionRepository {
                 .fetchOptional(this::toConnection);
     }
 
+    public List<AccountConnection> findAll(UUID tenantId, UUID actorId) {
+        return db.selectFrom(ACCOUNT_CONNECTIONS)
+                .where(ACCOUNT_CONNECTIONS.TENANT_ID.eq(tenantId))
+                .and(ACCOUNT_CONNECTIONS.ACTOR_ID.eq(actorId))
+                .orderBy(ACCOUNT_CONNECTIONS.CREATED_AT, ACCOUNT_CONNECTIONS.ID)
+                .fetch(this::toConnection);
+    }
+
     public List<AccountConnection> findActive(UUID tenantId, UUID actorId, Provider provider) {
         return db.selectFrom(ACCOUNT_CONNECTIONS)
                 .where(ACCOUNT_CONNECTIONS.TENANT_ID.eq(tenantId))
@@ -115,6 +124,37 @@ public class ConnectionRepository {
                         .and(ACCOUNT_CONNECTIONS.ACTOR_ID.eq(actorId))
                         .execute()
                 == 1;
+    }
+
+    public boolean markDisconnected(AccountConnection connection, Instant changedAt) {
+        return db.update(ACCOUNT_CONNECTIONS)
+                        .set(ACCOUNT_CONNECTIONS.STATUS, ConnectionStatus.DISCONNECTED.value())
+                        .set(ACCOUNT_CONNECTIONS.UPDATED_AT, utc(changedAt))
+                        .where(sameStoredConnection(connection))
+                        .execute()
+                == 1;
+    }
+
+    public boolean deleteDisconnected(AccountConnection connection) {
+        return db.deleteFrom(ACCOUNT_CONNECTIONS)
+                        .where(sameStoredConnection(connection))
+                        .and(ACCOUNT_CONNECTIONS.STATUS.eq(ConnectionStatus.DISCONNECTED.value()))
+                        .execute()
+                == 1;
+    }
+
+    private Condition sameStoredConnection(AccountConnection connection) {
+        return ACCOUNT_CONNECTIONS
+                .ID
+                .eq(connection.id())
+                .and(ACCOUNT_CONNECTIONS.TENANT_ID.eq(connection.tenantId()))
+                .and(ACCOUNT_CONNECTIONS.ACTOR_ID.eq(connection.actorId()))
+                .and(ACCOUNT_CONNECTIONS.ENCRYPTED_REFRESH_TOKEN.eq(
+                        connection.encryptedToken().data()))
+                .and(ACCOUNT_CONNECTIONS.TOKEN_NONCE.eq(
+                        connection.encryptedToken().nonce()))
+                .and(ACCOUNT_CONNECTIONS.KEY_VERSION.eq(
+                        connection.encryptedToken().keyVersion()));
     }
 
     private AccountConnection toConnection(Record row) {

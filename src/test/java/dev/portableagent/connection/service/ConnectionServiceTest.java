@@ -7,6 +7,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import dev.portableagent.connection.crypto.TokenCipher;
@@ -25,6 +26,8 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -181,5 +184,74 @@ class ConnectionServiceTest {
 
         verify(sessions).reject("state-value");
         verify(providers, never()).get(any());
+    }
+
+    @Test
+    void list_whenOwnerHasConnections_shouldReturnRepositoryResult() {
+        var connection = connection();
+        when(repository.findAll(owner.tenantId(), owner.actorId())).thenReturn(List.of(connection));
+
+        assertThat(service.list(owner.tenantId(), owner.actorId())).containsExactly(connection);
+    }
+
+    @Test
+    void disconnect_whenConnectionExists_shouldBlockItBeforeRevokeAndDelete() {
+        var connection = connection();
+        when(repository.findById(owner.tenantId(), owner.actorId(), connection.id()))
+                .thenReturn(Optional.of(connection));
+        when(repository.markDisconnected(connection, now)).thenReturn(true);
+        when(cipher.decrypt(connection.encryptedToken(), owner)).thenReturn("refresh-secret");
+        when(providers.get(connection.provider())).thenReturn(provider);
+        when(repository.deleteDisconnected(connection)).thenReturn(true);
+
+        service.disconnect(owner.tenantId(), owner.actorId(), connection.id());
+
+        var order = inOrder(repository, cipher, providers, provider);
+        order.verify(repository).markDisconnected(connection, now);
+        order.verify(providers).get(connection.provider());
+        order.verify(cipher).decrypt(connection.encryptedToken(), owner);
+        order.verify(provider).revoke("refresh-secret");
+        order.verify(repository).deleteDisconnected(connection);
+    }
+
+    @Test
+    void disconnect_whenProviderRevokeFails_shouldKeepDisconnectedConnectionForRetry() {
+        var connection = connection();
+        var failure = new ProviderCallFailed("Provider revoke failed");
+        when(repository.findById(owner.tenantId(), owner.actorId(), connection.id()))
+                .thenReturn(Optional.of(connection));
+        when(repository.markDisconnected(connection, now)).thenReturn(true);
+        when(cipher.decrypt(connection.encryptedToken(), owner)).thenReturn("refresh-secret");
+        when(providers.get(connection.provider())).thenReturn(provider);
+        doThrow(failure).when(provider).revoke("refresh-secret");
+
+        assertThatThrownBy(() -> service.disconnect(owner.tenantId(), owner.actorId(), connection.id()))
+                .isSameAs(failure);
+        verify(repository, never()).deleteDisconnected(any());
+    }
+
+    @Test
+    void disconnect_whenConnectionDoesNotBelongToOwner_shouldReturnSameNotFoundError() {
+        var connectionId = UUID.randomUUID();
+        when(repository.findById(owner.tenantId(), owner.actorId(), connectionId))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.disconnect(owner.tenantId(), owner.actorId(), connectionId))
+                .isInstanceOf(ConnectionNotFound.class)
+                .hasMessage("Connection was not found");
+        verifyNoInteractions(cipher, providers, provider);
+    }
+
+    private AccountConnection connection() {
+        return new AccountConnection(
+                UUID.randomUUID(),
+                owner.tenantId(),
+                owner.actorId(),
+                owner.provider(),
+                "google-user",
+                ConnectionStatus.ACTIVE,
+                new EncryptedToken(new byte[] {1}, new byte[] {2}, 1),
+                now.minusSeconds(60),
+                now.minusSeconds(60));
     }
 }
