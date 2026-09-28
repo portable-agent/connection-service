@@ -30,6 +30,10 @@ endpoints и provider clients ещё не реализованы.
 сохраняет только hash/encrypted значения и завершает flow через атомарный `consume`. TTL задаётся
 типизированным `connection.oauth.session-ttl` и сейчас по умолчанию равен 10 минутам.
 
+Provider-слой использует стратегии из map, а не условные `if`. Реализован Google OAuth adapter:
+authorization code + PKCE, offline refresh token, refresh, revoke и получение стабильного `sub` через
+OpenID UserInfo. Adapter выключен по умолчанию и не создаётся без явной внешней конфигурации.
+
 Интеграционные тесты запускают Spring Boot и repository с PostgreSQL в Testcontainers, проверяют
 Flyway, jOOQ, tenant isolation, health и закрытый доступ к метрикам. Без Docker тесты завершаются
 ошибкой, а не пропускаются.

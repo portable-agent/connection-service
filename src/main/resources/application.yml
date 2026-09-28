@@ -9,6 +9,18 @@ spring:
 connection:
     oauth:
         session-ttl: 10m
+    google:
+        enabled: ${GOOGLE_OAUTH_ENABLED:false}
+        authorization-url: https://accounts.google.com/o/oauth2/v2/auth
+        token-url: https://oauth2.googleapis.com/token
+        user-info-url: https://openidconnect.googleapis.com/v1/userinfo
+        revoke-url: https://oauth2.googleapis.com/revoke
+        client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
+        client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
+        redirect-uri: ${GOOGLE_OAUTH_REDIRECT_URI:}
+        scopes:
+            - openid
+            - https://www.googleapis.com/auth/calendar.events
 
 management:
     endpoints:

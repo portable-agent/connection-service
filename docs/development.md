@@ -37,3 +37,16 @@ $env:CONNECTION_OAUTH_SESSION_TTL = "10m"
 ```
 
 Нулевое или отрицательное значение останавливает запуск, чтобы state не жил неограниченно.
+
+Google adapter выключен по умолчанию. Для sandbox нужны значения из secret manager и точный callback,
+зарегистрированный в Google Cloud Console:
+
+```powershell
+$env:GOOGLE_OAUTH_ENABLED = "true"
+$env:GOOGLE_OAUTH_CLIENT_ID = "<client-id>"
+$env:GOOGLE_OAUTH_CLIENT_SECRET = "<client-secret>"
+$env:GOOGLE_OAUTH_REDIRECT_URI = "<registered-callback-uri>"
+```
+
+Endpoint properties можно переопределить для локального OAuth stub. Никогда не добавляй client secret,
+authorization code, access token или refresh token в `.env` под Git.
