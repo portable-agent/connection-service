@@ -26,6 +26,8 @@ auth:
     issuer: ${OIDC_ISSUER}
     jwks-url: ${OIDC_JWKS_URL}
     audience: ${OIDC_AUDIENCE:connection-service}
+    internal:
+        clients: ${OIDC_INTERNAL_CLIENTS:}
 
 management:
     endpoints:

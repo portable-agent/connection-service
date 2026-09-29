@@ -16,7 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
-@EnableConfigurationProperties(AuthProperties.class)
+@EnableConfigurationProperties({AuthProperties.class, InternalAuthProperties.class})
 public class SecurityConfig {
     @Bean
     JwtDecoder jwtDecoder(AuthProperties properties) {
@@ -30,7 +30,13 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    InternalClientAuthorizationManager internalClientAuthorizationManager(InternalAuthProperties properties) {
+        return new InternalClientAuthorizationManager(properties);
+    }
+
+    @Bean
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http, InternalClientAuthorizationManager internalClientAuthorizationManager) throws Exception {
         return http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.contentSecurityPolicy(
@@ -39,6 +45,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/v1/connections/callback")
                         .permitAll()
+                        .requestMatchers("/internal/v1/tokens")
+                        .access(internalClientAuthorizationManager)
                         .requestMatchers("/api/v1/connections", "/api/v1/connections/**")
                         .authenticated()
                         .anyRequest()

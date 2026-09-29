@@ -99,3 +99,14 @@ Callback принимает ровно одно из `code` или `error`. Эт
 погашает state без расшифровки PKCE verifier. HTML результата статичен и не содержит входных данных,
 а start и callback возвращают `Cache-Control: no-store`. Ошибки отображаются в Problem Details без
 provider body, token, code или state.
+
+## Внутренняя выдача access token
+
+`POST /internal/v1/tokens` доступен только service JWT с audience `connection-service`, authority
+`SCOPE_connection:token` и claim `azp`, который входит в конфигурируемый allowlist. Tenant всегда
+берётся из JWT, а actor id приходит от доверенного Action Service в теле запроса.
+
+`TokenService` запрашивает все активные подключения actor/provider. Ноль записей означает, что нужно
+подключение; больше одной требует явного выбора в будущем контракте. При ровно одной записи refresh
+token расшифровывается внутри сервиса и передаётся provider-стратегии. Наружу выходит только access
+token со сроком жизни и `Cache-Control: no-store`; его `toString` всегда редактирует секрет.
