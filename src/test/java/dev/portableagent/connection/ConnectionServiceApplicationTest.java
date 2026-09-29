@@ -23,7 +23,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
             "connection.token-keys.enabled=true",
             "connection.token-keys.current-version=1",
             "connection.token-keys.items[0].version=1",
-            "connection.token-keys.items[0].value=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            "connection.token-keys.items[0].value=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+            "auth.issuer=http://identity.test/realms/portable-agent",
+            "auth.jwks-url=http://identity.test/realms/portable-agent/certs",
+            "auth.audience=connection-service"
         })
 @Testcontainers
 class ConnectionServiceApplicationTest {
@@ -55,7 +58,7 @@ class ConnectionServiceApplicationTest {
 
     @Test
     void metrics_withoutLogin_shouldBeBlocked() throws Exception {
-        assertThat(get("/actuator/prometheus").statusCode()).isEqualTo(403);
+        assertThat(get("/actuator/prometheus").statusCode()).isEqualTo(401);
     }
 
     private HttpResponse<String> get(String path) throws Exception {

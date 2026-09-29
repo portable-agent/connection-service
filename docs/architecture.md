@@ -86,3 +86,16 @@ UPDATE` по владельцу, provider и внешнему account id. При
 для повторного DELETE, но статус уже не разрешает их использовать. Условные UPDATE и DELETE также
 сверяют сохранённые ciphertext, nonce и версию ключа: старый запрос отключения не может изменить или
 удалить подключение, которое пользователь успел обновить через reconnect.
+
+## HTTP и JWT
+
+Controller реализует сгенерированный `ConnectionsApi`, преобразует только HTTP DTO и вызывает один
+метод service на endpoint. Start, list и disconnect доступны только с bearer JWT. Валидаторы требуют
+правильные подпись, issuer, audience `connection-service`, UUID `sub` и UUID `tenant_id`; эти claims
+становятся единственным источником владельца. Callback открыт, потому что его вызывает OAuth
+provider, а владельца восстанавливает одноразовый state из БД.
+
+Callback принимает ровно одно из `code` или `error`. Это правило находится в service. Отказ provider
+погашает state без расшифровки PKCE verifier. HTML результата статичен и не содержит входных данных,
+а start и callback возвращают `Cache-Control: no-store`. Ошибки отображаются в Problem Details без
+provider body, token, code или state.
