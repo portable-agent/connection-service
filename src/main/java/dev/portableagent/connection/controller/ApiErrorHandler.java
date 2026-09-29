@@ -2,7 +2,9 @@ package dev.portableagent.connection.controller;
 
 import dev.portableagent.connection.provider.ProviderCallFailed;
 import dev.portableagent.connection.provider.ProviderNotConfigured;
+import dev.portableagent.connection.service.ConnectionAmbiguous;
 import dev.portableagent.connection.service.ConnectionNotFound;
+import dev.portableagent.connection.service.ConnectionRequired;
 import dev.portableagent.connection.service.InvalidOAuthCallback;
 import dev.portableagent.connection.service.InvalidOAuthSession;
 import java.net.URI;
@@ -32,6 +34,16 @@ public class ApiErrorHandler {
     @ExceptionHandler(ProviderCallFailed.class)
     ProblemDetail providerUnavailable() {
         return problem(HttpStatus.BAD_GATEWAY, "Provider is unavailable", "provider-unavailable");
+    }
+
+    @ExceptionHandler(ConnectionRequired.class)
+    ProblemDetail connectionRequired() {
+        return problem(HttpStatus.CONFLICT, "Connection is required", "connection-required");
+    }
+
+    @ExceptionHandler(ConnectionAmbiguous.class)
+    ProblemDetail connectionAmbiguous() {
+        return problem(HttpStatus.CONFLICT, "Connection choice is required", "connection-ambiguous");
     }
 
     private ProblemDetail problem(HttpStatus status, String title, String type) {

@@ -58,4 +58,8 @@ authorization code, access token или refresh token в `.env` под Git.
 $env:OIDC_ISSUER = "http://localhost:8081/realms/portable-agent"
 $env:OIDC_JWKS_URL = "http://localhost:8081/realms/portable-agent/protocol/openid-connect/certs"
 $env:OIDC_AUDIENCE = "connection-service"
+$env:OIDC_INTERNAL_CLIENTS = "action-service"
 ```
+
+`OIDC_INTERNAL_CLIENTS` — разделённый запятыми allowlist значений JWT claim `azp`. Пустой список
+безопасно запрещает всем клиентам internal token endpoint.

@@ -49,8 +49,12 @@ refresh token шифрование или запись в БД завершаю�
 `ConnectionController` реализует public часть OpenAPI v2.7.0. Start, list и disconnect получают
 `tenant_id` и `sub` только из проверенного JWT; callback открыт для OAuth provider, но одноразовый
 state связывает его с владельцем. Ответы start/callback имеют `Cache-Control: no-store`. JWT
-проверяется по подписи, issuer, audience `connection-service` и UUID identity claims. Internal token
-endpoint будет следующим отдельным бизнес-срезом.
+проверяется по подписи, issuer, audience `connection-service` и UUID identity claims.
+
+Internal token endpoint принимает доверенный `actorId`, находит активные подключения и не выбирает
+аккаунт скрыто: отсутствие даёт `connection-required`, несколько записей — `connection-ambiguous`.
+Ровно один refresh token расшифровывается и обменивается у provider на короткоживущий access token.
+Endpoint требует audience `connection-service`, scope `connection:token` и `azp` из внешнего allowlist.
 
 Интеграционные тесты запускают Spring Boot и repository с PostgreSQL в Testcontainers, проверяют
 Flyway, jOOQ, tenant isolation, health и закрытый доступ к метрикам. Без Docker тесты завершаются
