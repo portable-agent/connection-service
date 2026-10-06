@@ -1,7 +1,7 @@
 plugins {
     java
     jacoco
-    id("org.jooq.jooq-codegen-gradle") version "3.21.8"
+    id("org.jooq.jooq-codegen-gradle") version "3.21.9"
     id("org.openapi.generator") version "7.24.0"
     id("com.diffplug.spotless") version "8.10.1"
     id("org.springframework.boot") version "4.1.1"
@@ -35,7 +35,7 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     runtimeOnly("org.postgresql:postgresql")
 
-    jooqCodegen("org.jooq:jooq-meta-extensions:3.21.8")
+    jooqCodegen("org.jooq:jooq-meta-extensions:3.21.9")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
