@@ -14,8 +14,10 @@
 2. Проверь `DATABASE_URL`, `DATABASE_USER` и `DATABASE_PASSWORD`.
 3. Если включено шифрование, проверь наличие `CONNECTION_TOKEN_KEYS_CURRENT_VERSION` и всех ключей,
    на которые ссылаются строки в базе. Значения ключей не выводи в терминал и issue.
-4. Запусти `./gradlew test`.
-5. Не записывай token, authorization code и client secret в issue или лог.
+4. Если включён Google OAuth, проверь обязательные `GOOGLE_OAUTH_*` настройки. Ошибка создания
+   `googleOAuthProvider` означает неполную конфигурацию приложения, а не проблему Google API.
+5. Запусти `./gradlew test`.
+6. Не записывай token, authorization code и client secret в issue или лог.
 
 ## Ротация ключа
 

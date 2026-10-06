@@ -34,6 +34,8 @@
 Provider-слой использует стратегии из map, а не условные `if`. Реализован Google OAuth adapter:
 authorization code + PKCE, offline refresh token, refresh, revoke и получение стабильного `sub` через
 OpenID UserInfo. Adapter выключен по умолчанию и не создаётся без явной внешней конфигурации.
+Инфраструктурный `RestClient.Builder` создаётся конфигурацией сервиса, поэтому включение adapter не
+зависит от неявной auto-configuration конкретного web starter.
 
 `ConnectionService` выполняет бизнесовый OAuth flow: проверяет доступность provider до создания
 сессии, строит authorization URL, принимает одноразовый callback, обменивает code, шифрует refresh

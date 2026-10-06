@@ -5,12 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import dev.portableagent.connection.provider.OAuthProvider;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.web.client.RestClient;
 
 class GoogleOAuthConfigTest {
-    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withUserConfiguration(GoogleOAuthConfig.class)
-            .withBean(RestClient.Builder.class, RestClient::builder);
+    private final ApplicationContextRunner contextRunner =
+            new ApplicationContextRunner().withUserConfiguration(GoogleOAuthConfig.class);
 
     @Test
     void context_whenGoogleIsDisabled_shouldNotCreateProvider() {
