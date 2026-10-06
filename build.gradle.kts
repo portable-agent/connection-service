@@ -1,7 +1,7 @@
 plugins {
     java
     jacoco
-    id("org.jooq.jooq-codegen-gradle") version "3.21.8"
+    id("org.jooq.jooq-codegen-gradle") version "3.21.9"
     id("org.openapi.generator") version "7.24.0"
     id("com.diffplug.spotless") version "8.10.1"
     id("org.springframework.boot") version "4.1.1"
